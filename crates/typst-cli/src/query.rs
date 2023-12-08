@@ -54,7 +54,7 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
 
 /// Retrieve the matches for the selector.
 fn retrieve(
-    world: &dyn World,
+    world: &(dyn World + Send + Sync),
     command: &QueryCommand,
     document: &Document,
 ) -> StrResult<Vec<Content>> {

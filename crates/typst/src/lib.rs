@@ -84,7 +84,10 @@ use crate::visualize::Color;
 /// `Tracer::new()`. Independently of whether compilation succeeded, calling
 /// `tracer.warnings()` after compilation will return all compiler warnings.
 #[tracing::instrument(skip_all)]
-pub fn compile(world: &dyn World, tracer: &mut Tracer) -> SourceResult<Document> {
+pub fn compile(
+    world: &(dyn World + Send + Sync),
+    tracer: &mut Tracer,
+) -> SourceResult<Document> {
     // Call `track` on the world just once to keep comemo's ID stable.
     let world = world.track();
 
@@ -103,7 +106,7 @@ pub fn compile(world: &dyn World, tracer: &mut Tracer) -> SourceResult<Document>
 
 /// Relayout until introspection converges.
 fn typeset(
-    world: Tracked<dyn World + '_>,
+    world: Tracked<dyn World + Send + Sync + '_>,
     tracer: &mut Tracer,
     content: &Content,
 ) -> SourceResult<Document> {
@@ -112,6 +115,10 @@ fn typeset(
 
     let mut iter = 0;
     let mut document = Document::default();
+
+    // rayon::spawn(|| {
+    //     world.library();
+    // });
 
     // Relayout until all introspections stabilize.
     // If that doesn't happen within five attempts, we give up.

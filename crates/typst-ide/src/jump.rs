@@ -20,7 +20,7 @@ pub enum Jump {
 }
 
 impl Jump {
-    fn from_span(world: &dyn World, span: Span) -> Option<Self> {
+    fn from_span(world: &(dyn World + Send + Sync), span: Span) -> Option<Self> {
         let id = span.id()?;
         let source = world.source(id).ok()?;
         let node = source.find(span)?;
@@ -30,7 +30,7 @@ impl Jump {
 
 /// Determine where to jump to based on a click in a frame.
 pub fn jump_from_click(
-    world: &dyn World,
+    world: &(dyn World + Send + Sync),
     document: &Document,
     frame: &Frame,
     click: Point,

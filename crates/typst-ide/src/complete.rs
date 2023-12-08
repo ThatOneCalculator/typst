@@ -32,7 +32,7 @@ use crate::{plain_docs_sentence, summarize_font_family};
 /// the autocompletions. Label completions, for instance, are only generated
 /// when the document is available.
 pub fn autocomplete(
-    world: &dyn World,
+    world: &(dyn World + Send + Sync),
     document: Option<&Document>,
     source: &Source,
     cursor: usize,
@@ -969,7 +969,7 @@ fn code_completions(ctx: &mut CompletionContext, hash: bool) {
 
 /// Context for autocompletion.
 struct CompletionContext<'a> {
-    world: &'a (dyn World + 'a),
+    world: &'a (dyn World + Send + Sync + 'a),
     document: Option<&'a Document>,
     global: &'a Scope,
     math: &'a Scope,
@@ -987,7 +987,7 @@ struct CompletionContext<'a> {
 impl<'a> CompletionContext<'a> {
     /// Create a new autocompletion context.
     fn new(
-        world: &'a (dyn World + 'a),
+        world: &'a (dyn World + Send + Sync + 'a),
         document: Option<&'a Document>,
         source: &'a Source,
         cursor: usize,

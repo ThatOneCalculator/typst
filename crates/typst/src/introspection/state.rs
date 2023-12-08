@@ -218,7 +218,7 @@ impl State {
     #[comemo::memoize]
     fn sequence_impl(
         &self,
-        world: Tracked<dyn World + '_>,
+        world: Tracked<dyn World + Send + Sync + '_>,
         introspector: Tracked<Introspector>,
         route: Tracked<Route>,
         locator: Tracked<Locator>,

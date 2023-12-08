@@ -587,7 +587,7 @@ impl Works {
     /// Generate all citations and the whole bibliography.
     #[comemo::memoize]
     pub fn generate(
-        world: Tracked<dyn World + '_>,
+        world: Tracked<dyn World + Send + Sync + '_>,
         introspector: Tracked<Introspector>,
     ) -> StrResult<Arc<Self>> {
         let mut generator = Generator::new(world, introspector)?;
@@ -600,7 +600,7 @@ impl Works {
 /// Context for generating the bibliography.
 struct Generator<'a> {
     /// The world that is used to evaluate mathematical material in citations.
-    world: Tracked<'a, dyn World + 'a>,
+    world: Tracked<'a, dyn World + Send + Sync + 'a>,
     /// The document's bibliography.
     bibliography: BibliographyElem,
     /// The document's citation groups.
@@ -639,7 +639,7 @@ struct CiteInfo {
 impl<'a> Generator<'a> {
     /// Create a new generator.
     fn new(
-        world: Tracked<'a, dyn World + 'a>,
+        world: Tracked<'a, dyn World + Send + Sync + 'a>,
         introspector: Tracked<Introspector>,
     ) -> StrResult<Self> {
         let bibliography = BibliographyElem::find(introspector)?;
@@ -880,7 +880,7 @@ impl<'a> Generator<'a> {
 /// Renders hayagriva elements into content.
 struct ElemRenderer<'a> {
     /// The world that is used to evaluate mathematical material.
-    world: Tracked<'a, dyn World + 'a>,
+    world: Tracked<'a, dyn World + Send + Sync + 'a>,
     /// The span that is attached to all of the resulting content.
     span: Span,
     /// Resolves the supplement of i-th citation in the request.

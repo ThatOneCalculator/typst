@@ -9,7 +9,10 @@ use typst::syntax::{ast, LinkedNode, Span, SyntaxKind};
 use typst::World;
 
 /// Try to determine a set of possible values for an expression.
-pub fn analyze_expr(world: &dyn World, node: &LinkedNode) -> EcoVec<Value> {
+pub fn analyze_expr(
+    world: &(dyn World + Send + Sync),
+    node: &LinkedNode,
+) -> EcoVec<Value> {
     match node.cast::<ast::Expr>() {
         Some(ast::Expr::None(_)) => eco_vec![Value::None],
         Some(ast::Expr::Auto(_)) => eco_vec![Value::Auto],
@@ -45,7 +48,10 @@ pub fn analyze_expr(world: &dyn World, node: &LinkedNode) -> EcoVec<Value> {
 }
 
 /// Try to load a module from the current source file.
-pub fn analyze_import(world: &dyn World, source: &LinkedNode) -> Option<Value> {
+pub fn analyze_import(
+    world: &(dyn World + Send + Sync),
+    source: &LinkedNode,
+) -> Option<Value> {
     let source = analyze_expr(world, source).into_iter().next()?;
     if source.scope().is_some() {
         return Some(source);

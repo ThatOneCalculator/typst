@@ -11,7 +11,7 @@ use crate::World;
 /// Holds all data needed during compilation.
 pub struct Engine<'a> {
     /// The compilation environment.
-    pub world: Tracked<'a, dyn World + 'a>,
+    pub world: Tracked<'a, dyn World + Send + Sync + 'a>,
     /// Provides access to information about the document.
     pub introspector: Tracked<'a, Introspector>,
     /// The route the engine took during compilation. This is used to detect

@@ -30,7 +30,7 @@ impl<'a> Vm<'a> {
     }
 
     /// Access the underlying world.
-    pub fn world(&self) -> Tracked<'a, dyn World + 'a> {
+    pub fn world(&self) -> Tracked<'a, dyn World + Send + Sync + 'a> {
         self.engine.world
     }
 

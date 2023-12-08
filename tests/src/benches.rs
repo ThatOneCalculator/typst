@@ -98,8 +98,8 @@ impl BenchWorld {
         }
     }
 
-    fn track(&self) -> Tracked<dyn World> {
-        (self as &dyn World).track()
+    fn track(&self) -> Tracked<dyn World + Send + Sync> {
+        (self as &(dyn World + Send + Sync)).track()
     }
 }
 

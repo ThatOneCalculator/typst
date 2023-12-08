@@ -37,7 +37,7 @@ use crate::World;
 #[comemo::memoize]
 #[tracing::instrument(skip_all)]
 pub fn eval(
-    world: Tracked<dyn World + '_>,
+    world: Tracked<dyn World + Send + Sync + '_>,
     route: Tracked<Route>,
     tracer: TrackedMut<Tracer>,
     source: &Source,
@@ -95,7 +95,7 @@ pub fn eval(
 /// Everything in the output is associated with the given `span`.
 #[comemo::memoize]
 pub fn eval_string(
-    world: Tracked<dyn World + '_>,
+    world: Tracked<dyn World + Send + Sync + '_>,
     string: &str,
     span: Span,
     mode: EvalMode,

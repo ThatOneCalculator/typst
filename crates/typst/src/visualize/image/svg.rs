@@ -44,7 +44,7 @@ impl SvgImage {
     #[comemo::memoize]
     pub fn with_fonts(
         data: Bytes,
-        world: Tracked<dyn World + '_>,
+        world: Tracked<dyn World + Send + Sync + '_>,
         families: &[String],
     ) -> StrResult<Self> {
         // Disable usvg's default to "Times New Roman". Instead, we default to
@@ -127,7 +127,7 @@ impl Hash for Repr {
 
 /// Discover and load the fonts referenced by an SVG.
 fn load_svg_fonts(
-    world: Tracked<dyn World + '_>,
+    world: Tracked<dyn World + Send + Sync + '_>,
     tree: &usvg::Tree,
     families: &[String],
 ) -> (fontdb::Database, u128) {

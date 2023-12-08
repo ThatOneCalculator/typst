@@ -344,7 +344,7 @@ impl Image {
         data: Bytes,
         format: ImageFormat,
         alt: Option<EcoString>,
-        world: Tracked<dyn World + '_>,
+        world: Tracked<dyn World + Send + Sync + '_>,
         families: &[String],
     ) -> StrResult<Self> {
         let kind = match format {

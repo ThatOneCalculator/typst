@@ -245,7 +245,7 @@ impl Eval for ast::Closure<'_> {
 pub(crate) fn call_closure(
     func: &Func,
     closure: &Prehashed<Closure>,
-    world: Tracked<dyn World + '_>,
+    world: Tracked<dyn World + Send + Sync + '_>,
     introspector: Tracked<Introspector>,
     route: Tracked<Route>,
     locator: Tracked<Locator>,

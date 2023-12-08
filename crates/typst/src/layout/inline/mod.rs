@@ -41,7 +41,7 @@ pub(crate) fn layout_inline(
     #[allow(clippy::too_many_arguments)]
     fn cached(
         children: &[Prehashed<Content>],
-        world: Tracked<dyn World + '_>,
+        world: Tracked<dyn World + Send + Sync + '_>,
         introspector: Tracked<Introspector>,
         route: Tracked<Route>,
         locator: Tracked<Locator>,
