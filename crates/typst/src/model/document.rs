@@ -65,6 +65,21 @@ impl Construct for DocumentElem {
     }
 }
 
+impl DocumentElem {
+    fn styled_children<'a>(
+        &'a self,
+        outer: &'a StyleChain,
+    ) -> impl Iterator<Item = (&'a Content, StyleChain<'a>)> {
+        self.children().iter().map(|child| {
+            if let Some((elem, map)) = child.to_styled() {
+                (elem, outer.chain(map))
+            } else {
+                (child, *outer)
+            }
+        })
+    }
+}
+
 impl LayoutRoot for DocumentElem {
     /// Layout the document into a sequence of frames, one per page.
     #[tracing::instrument(name = "DocumentElem::layout_root", skip_all)]
@@ -75,33 +90,24 @@ impl LayoutRoot for DocumentElem {
     ) -> SourceResult<Document> {
         tracing::info!("Document layout");
 
+        let start = std::time::Instant::now();
+        let fragments = engine.parallelize(
+            self.styled_children(&styles),
+            |engine, (child, styles)| {
+                if let Some(page) = child.to::<PageElem>() {
+                    let mut page_counter = ManualPageCounter::new();
+                    let extend_to = None;
+                    page.layout(engine, styles, &mut page_counter, extend_to)
+                } else {
+                    bail!(child.span(), "unexpected document child");
+                }
+            },
+        );
+        println!("finished document in {:?}", start.elapsed());
+
         let mut pages = Vec::with_capacity(self.children().len());
-        let mut page_counter = ManualPageCounter::new();
-
-        let children = self.children();
-        let mut iter = children.iter().peekable();
-
-        while let Some(mut child) = iter.next() {
-            let outer = styles;
-            let mut styles = styles;
-            if let Some((elem, local)) = child.to_styled() {
-                styles = outer.chain(local);
-                child = elem;
-            }
-
-            if let Some(page) = child.to::<PageElem>() {
-                let extend_to = iter.peek().and_then(|&next| {
-                    next.to_styled()
-                        .map_or(next, |(elem, _)| elem)
-                        .to::<PageElem>()?
-                        .clear_to(styles)
-                });
-                let fragment =
-                    page.layout(engine, styles, &mut page_counter, extend_to)?;
-                pages.extend(fragment);
-            } else {
-                bail!(child.span(), "unexpected document child");
-            }
+        for fragment in fragments {
+            pages.extend(fragment?);
         }
 
         Ok(Document {

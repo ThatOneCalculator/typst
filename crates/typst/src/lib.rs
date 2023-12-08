@@ -92,6 +92,7 @@ pub fn compile(
     let world = world.track();
 
     // Try to evaluate the source file into a module.
+    let start_eval = std::time::Instant::now();
     let module = crate::eval::eval(
         world,
         Route::default().track(),
@@ -99,6 +100,7 @@ pub fn compile(
         &world.main(),
     )
     .map_err(deduplicate)?;
+    println!("finished eval in {:?}", start_eval.elapsed());
 
     // Typeset the module's content, relayouting until convergence.
     typeset(world, tracer, &module.content()).map_err(deduplicate)
@@ -110,6 +112,7 @@ fn typeset(
     tracer: &mut Tracer,
     content: &Content,
 ) -> SourceResult<Document> {
+    let start_typeset = std::time::Instant::now();
     let library = world.library();
     let styles = StyleChain::new(&library.styles);
 
@@ -124,6 +127,7 @@ fn typeset(
     // If that doesn't happen within five attempts, we give up.
     loop {
         tracing::info!("Layout iteration {iter}");
+        let start_iter = std::time::Instant::now();
 
         // Clear delayed errors.
         tracer.delayed();
@@ -147,6 +151,8 @@ fn typeset(
             break;
         }
 
+        println!("finished iter in {:?}", start_iter.elapsed());
+
         if iter >= 5 {
             tracer.warn(warning!(
                 Span::detached(), "layout did not converge within 5 attempts";
@@ -161,6 +167,7 @@ fn typeset(
     if !delayed.is_empty() {
         return Err(delayed);
     }
+    println!("finished typeset in {:?}", start_typeset.elapsed());
 
     Ok(document)
 }

@@ -27,6 +27,21 @@ pub struct FlowElem {
     pub children: Vec<Prehashed<Content>>,
 }
 
+impl FlowElem {
+    fn styled_children<'a>(
+        &'a self,
+        outer: &'a StyleChain,
+    ) -> impl Iterator<Item = (&'a Content, StyleChain<'a>)> {
+        self.children().iter().map(|c| &**c).map(|child| {
+            if let Some((elem, map)) = child.to_styled() {
+                (elem, outer.chain(map))
+            } else {
+                (child, *outer)
+            }
+        })
+    }
+}
+
 impl Layout for FlowElem {
     #[tracing::instrument(name = "FlowElem::layout", skip_all)]
     fn layout(
@@ -41,20 +56,31 @@ impl Layout for FlowElem {
         if !regions.size.y.is_finite() && regions.expand.y {
             bail!(self.span(), "cannot expand into infinite height");
         }
+
         let mut layouter = FlowLayouter::new(regions, styles);
 
-        for mut child in self.children().iter().map(|c| &**c) {
-            let outer = styles;
-            let mut styles = styles;
-            if let Some((elem, map)) = child.to_styled() {
-                child = elem;
-                styles = outer.chain(map);
-            }
+        let par_fragments = engine.parallelize(
+            self.styled_children(&styles)
+                .filter_map(|(child, styles)| child.to::<ParElem>().map(|p| (p, styles))),
+            |engine, (par, styles)| {
+                par.layout(
+                    engine,
+                    styles,
+                    true,
+                    layouter.regions.base(),
+                    layouter.regions.expand.x,
+                )
+            },
+        );
 
+        let mut par_iter = par_fragments.into_iter();
+
+        for (child, styles) in self.styled_children(&styles) {
             if let Some(elem) = child.to::<VElem>() {
                 layouter.layout_spacing(engine, elem, styles)?;
-            } else if let Some(elem) = child.to::<ParElem>() {
-                layouter.layout_par(engine, elem, styles)?;
+            } else if child.is::<ParElem>() {
+                let fragment = par_iter.next().unwrap()?;
+                layouter.layout_par(engine, fragment, styles)?;
             } else if child.is::<LineElem>()
                 || child.is::<RectElem>()
                 || child.is::<SquareElem>()
@@ -215,21 +241,12 @@ impl<'a> FlowLayouter<'a> {
     fn layout_par(
         &mut self,
         engine: &mut Engine,
-        par: &ParElem,
+        fragment: Fragment,
         styles: StyleChain,
     ) -> SourceResult<()> {
+        let lines = fragment.into_frames();
         let align = AlignElem::alignment_in(styles).resolve(styles);
         let leading = ParElem::leading_in(styles);
-        let consecutive = self.last_was_par;
-        let lines = par
-            .layout(
-                engine,
-                styles,
-                consecutive,
-                self.regions.base(),
-                self.regions.expand.x,
-            )?
-            .into_frames();
 
         let mut sticky = self.items.len();
         for (i, item) in self.items.iter().enumerate().rev() {

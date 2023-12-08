@@ -95,13 +95,17 @@ pub fn compile_once(
     }
 
     let mut tracer = Tracer::new();
+    let start_compile = std::time::Instant::now();
     let result = typst::compile(world, &mut tracer);
+    println!("finished compile in {:?}", start_compile.elapsed());
     let warnings = tracer.warnings();
 
     match result {
         // Export the PDF / PNG.
         Ok(document) => {
+            let start_export = std::time::Instant::now();
             export(world, &document, command, watching)?;
+            println!("finished export in {:?}", start_export.elapsed());
             let duration = start.elapsed();
 
             tracing::info!("Compilation succeeded in {duration:?}");

@@ -162,8 +162,8 @@ impl Status {
         let mut w = color_stream();
         if std::io::stderr().is_terminal() {
             // Clear the terminal.
-            let esc = 27 as char;
-            write!(w, "{esc}[2J{esc}[1;1H")?;
+            // let esc = 27 as char;
+            // write!(w, "{esc}[2J{esc}[1;1H")?;
         }
 
         w.set_color(&color)?;

@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use comemo::{Track, Tracked, TrackedMut, Validate};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::diag::SourceResult;
 use crate::eval::Tracer;
@@ -24,7 +25,7 @@ pub struct Engine<'a> {
 }
 
 impl Engine<'_> {
-    /// Perform a fallible operation that does not immediately terminate further
+    /// Performs a fallible operation that does not immediately terminate further
     /// execution. Instead it produces a delayed error that is only promoted to
     /// a fatal one if it remains at the end of the introspection loop.
     pub fn delayed<F, T>(&mut self, f: F) -> T
@@ -39,6 +40,34 @@ impl Engine<'_> {
                 T::default()
             }
         }
+    }
+
+    /// Runs tasks on the engine in parallel.
+    pub fn parallelize<P, I, T, U, F>(&mut self, iter: P, f: F) -> Vec<U>
+    where
+        P: IntoIterator<IntoIter = I>,
+        I: Iterator<Item = T> + Send,
+        I::Item: Send,
+        F: Fn(&mut Engine, T) -> U + Send + Sync,
+        U: Send,
+    {
+        let Engine { world, introspector, ref route, .. } = *self;
+        iter.into_iter()
+            .collect::<Vec<_>>()
+            .into_par_iter()
+            .map(|value| {
+                let mut tracer = Tracer::new();
+                let mut locator = Locator::new();
+                let mut engine = Engine {
+                    world,
+                    route: route.clone(),
+                    tracer: tracer.track_mut(),
+                    locator: &mut locator,
+                    introspector,
+                };
+                f(&mut engine, value)
+            })
+            .collect()
     }
 }
 
