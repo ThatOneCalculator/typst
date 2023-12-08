@@ -325,7 +325,7 @@ impl Image {
         data: Bytes,
         format: ImageFormat,
         alt: Option<EcoString>,
-    ) -> StrResult<Self> {
+    ) -> StrResult<Image> {
         let kind = match format {
             ImageFormat::Raster(format) => {
                 ImageKind::Raster(RasterImage::new(data, format)?)
@@ -346,7 +346,7 @@ impl Image {
         alt: Option<EcoString>,
         world: Tracked<dyn World + Send + Sync + '_>,
         families: &[String],
-    ) -> StrResult<Self> {
+    ) -> StrResult<Image> {
         let kind = match format {
             ImageFormat::Raster(format) => {
                 ImageKind::Raster(RasterImage::new(data, format)?)
